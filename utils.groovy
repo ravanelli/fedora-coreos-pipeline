@@ -55,7 +55,7 @@ def get_pipeline_annotation(anno) {
     // hide this goop here than in the main pipeline code
     def split = env.JOB_NAME.split('/')
     def namespace = split[0]
-    def bc = split[1][namespace.length()+1..-1]
+    def bc ="" // split[1][namespace.length()+1..-1]
     return get_annotation(bc, anno)
 }
 
