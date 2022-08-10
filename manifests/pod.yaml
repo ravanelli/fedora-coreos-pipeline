@@ -15,7 +15,7 @@ spec:
      image: jenkins-agent:JENKINS_AGENT_IMAGE_TAG
      args: ['$(JENKINS_SECRET)', '$(JENKINS_NAME)']
    - name: coreos-assembler
-     image: COREOS_ASSEMBLER_IMAGE
+     image: coreos-assembler:main
      imagePullPolicy: Always
      command: ['/usr/bin/dumb-init']
      args: ['sleep', 'infinity']
