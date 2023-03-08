@@ -1,0 +1,7 @@
+unclassified:
+  gitHubPluginConfig:
+    hookSecretConfigs:
+      - credentialsId: github-webhook-shared-secret
+    configs:
+      - credentialsId: github-coreosbot-token-text
+        manageHooks: true

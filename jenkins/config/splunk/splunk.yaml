@@ -1,0 +1,9 @@
+unclassified:
+  SPLUNKJenkinsInstallation:
+    enabled: true
+    globalPipelineFilter: true
+    host: "${SPLUNK-HOST}"
+    port: 8088
+    SPLUNKAppUrl: "${SPLUNK-URL}"
+    token: "${SPLUNK-TOKEN}"
+    useSSL: true
