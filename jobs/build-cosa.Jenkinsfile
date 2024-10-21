@@ -26,12 +26,13 @@ properties([
          silentResponse: false,
          regexpFilterText: '$COREOS_ASSEMBLER_GIT_REF',
          regexpFilterExpression: 'main|rhcos-.*'
-        ]
+        ], 
+        cron('H H * * 1,3')
     ]),
     parameters([
       string(name: 'ARCHES',
              description: 'Space-separated list of target architectures',
-             defaultValue: "x86_64" + " " + pipeutils.get_supported_additional_arches().join(" "),
+             defaultValue: "s390x",
              trim: true),
       string(name: 'COREOS_ASSEMBLER_GIT_URL',
              description: 'Override the coreos-assembler git repo to use',
@@ -43,11 +44,11 @@ properties([
              trim: true),
       string(name: 'CONTAINER_REGISTRY_REPO',
              description: 'Override the registry to push the container to',
-             defaultValue: "quay.io/coreos-assembler/${containername}",
+             defaultValue: "quay.io/ravanelli/${containername}",
              trim: true),
       string(name: 'CONTAINER_REGISTRY_STAGING_REPO',
              description: 'Override the staging registry where intermediate images go',
-             defaultValue: "quay.io/coreos-assembler/staging",
+             defaultValue: "quay.io/ravanelli/staging",
              trim: true),
       string(name: 'COREOS_ASSEMBLER_IMAGE',
              description: 'Override the coreos-assembler image to use',
