@@ -103,22 +103,22 @@ lock(resource: "build-node-image") {
                                                 extra_build_args: ["--security-opt label=disable", "--mount-host-ca-certs", "--force"])
             }
         }
-        stage('Build Extensions Image') {
-            withCredentials([file(credentialsId: 'oscontainer-push-registry-secret', variable: 'REGISTRY_AUTH_FILE')]) {
-                // Use the node image as from
-                def build_from = container_registry_staging_manifest
-                pipeutils.build_and_push_image(arches: arches,
-                                               src_commit: commit,
-                                               src_url: src_config_url,
-                                               staging_repository: container_registry_staging_repo,
-                                               image_tag_staging: "${container_registry_staging_image_tag}-extensions",
-                                               manifest_tag_staging: "${container_registry_staging_manifest_tag}-extensions",
-                                               secret: "id=yumrepos,src=${yumrepos_file}", // notsecret (for secret scanners)
-                                               from: build_from,
-                                               extra_build_args: ["--security-opt label=disable", "--mount-host-ca-certs",
-                                                                  "--git-containerfile", "extensions/Dockerfile", "--force"])
-            }
-        }
+        // stage('Build Extensions Image') {
+        //     withCredentials([file(credentialsId: 'oscontainer-push-registry-secret', variable: 'REGISTRY_AUTH_FILE')]) {
+        //         // Use the node image as from
+        //         def build_from = container_registry_staging_manifest
+        //         pipeutils.build_and_push_image(arches: arches,
+        //                                        src_commit: commit,
+        //                                        src_url: src_config_url,
+        //                                        staging_repository: container_registry_staging_repo,
+        //                                        image_tag_staging: "${container_registry_staging_image_tag}-extensions",
+        //                                        manifest_tag_staging: "${container_registry_staging_manifest_tag}-extensions",
+        //                                        secret: "id=yumrepos,src=${yumrepos_file}", // notsecret (for secret scanners)
+        //                                        from: build_from,
+        //                                        extra_build_args: ["--security-opt label=disable", "--mount-host-ca-certs",
+        //                                                           "--git-containerfile", "extensions/Dockerfile", "--force"])
+        //     }
+        // }
         stage("Release Manifests") {
             withCredentials([file(credentialsId: 'oscontainer-push-registry-secret', variable: 'REGISTRY_AUTH_FILE')]) {
                 // copy the extensions first as the node image existing is a signal
