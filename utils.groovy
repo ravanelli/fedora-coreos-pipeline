@@ -551,22 +551,24 @@ def get_registry_repos(pipecfg, stream, version) {
 }
 
 def get_ocp_node_registry_repo(pipecfg, release, timestamp) {
-    def staging_repo = pipecfg.ocp_node_builds.registries.staging
-    def repo = pipecfg.ocp_node_builds.registries.prod.image
-    def tags = pipecfg.ocp_node_builds.registries.prod.tags
-
-    processed_tags = []
-    for (tag in tags) {
-        tag = utils.substituteStr(tag, [RELEASE: release, TIMESTAMP: timestamp])
-        if (pipecfg.hotfix) {
-            // this is a hotfix build; include the hotfix name
-            // in the tag suffix so we don't clobber official
-            // tags
-            tag += "-hotfix-${pipecfg.hotfix.name}"
+    def staging_repo = pipecfg.ocp_node_builds.registries.staging.image
+    def staging_manifest_tags = pipecfg.ocp_node_builds.registries.staging.tags
+    def prod_repo = pipecfg.ocp_node_builds.registries.prod.image
+    def prod_tags = pipecfg.ocp_node_builds.registries.prod.tags
+    def processTags = { tagList ->
+        tagList.collect { tag ->
+            def substituted = utils.substituteStr(tag, [RELEASE: release, TIMESTAMP: timestamp])
+            if (pipecfg.hotfix) {
+                substituted += "-hotfix-${pipecfg.hotfix.name}"
+            }
+            return substituted
         }
-        processed_tags += tag
     }
-    return [staging_repo, repo, processed_tags]
+
+    def final_staging_manifest_tags = processTags(staging_manifest_tags)
+    def final_prod_tags = processTags(prod_tags)
+    return [staging_repo, final_staging_manifest_tags, prod_repo, final_prod_tags]
+
 }
 
 // Determine if the config.yaml has a test_architectures entry for
@@ -865,7 +867,7 @@ def build_remote_image(arches, commit, url, repo, tag, secret=None, from=None,
     return digest_list
 }
 
-def push_manifest(digests, repo, manifest_tag) {
+def push_manifest(digests, repo, manifest_tag, get_digest) {
     def images = ""
     for (digest in digests) {
         images += " --image=docker://${repo}@${digest}"
@@ -873,11 +875,20 @@ def push_manifest(digests, repo, manifest_tag) {
     // arbitrarily selecting the s390x builder; we don't run this
     // locally because podman wants user namespacing (yes, even just
     // to push a manifest...)
+
+    def digest = ""
+    push_args = ["--write-digest-to-file", "{repo}-manifest-digest"]
     pipeutils.withPodmanRemoteArchBuilder(arch: "s390x") {
         shwrap("""
         cosa push-container-manifest \
-            --tag ${manifest_tag} --repo ${repo} ${images}
+            --tag ${manifest_tag} --repo ${repo} ${images} ${push_args.join(' ')}
         """)
+        digest = readFile("${tag}-${arch}")
+        shwrap("""rm -f ${tag}-${arch} """)
+
+    }
+    if (exitget_digest) {
+        return digest 
     }
 }
 
@@ -915,6 +926,7 @@ def build_and_push_image(params = [:]) {
     // from:                 string  -- Value to replace in the Containerfile
     // image_tag_staging:    string  -- Image tag for the staging repo.
     // manifest_tag_staging: string  -- Manifest tag for the staging repo.
+    // manifest_digest:      boolean -- Return the manifest digest
     // secret:               string  -- File path for the `podman --secret`
     // src_commit:           string  -- Source Git commit.
     // src_url:              string  -- Source Git URL.
@@ -927,7 +939,7 @@ def build_and_push_image(params = [:]) {
     def digests = build_remote_image(params['arches'], params['src_commit'], params['src_url'], params['staging_repository'],
                                      params['image_tag_staging'], secret, from, extra_build_args)
     stage("Push Manifest") {
-        push_manifest(digests, params['staging_repository'], params['manifest_tag_staging'])
+        return push_manifest(digests, params['staging_repository'], params['manifest_tag_staging'][0])
     }
 }
 

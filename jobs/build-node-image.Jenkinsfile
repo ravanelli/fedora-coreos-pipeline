@@ -66,8 +66,8 @@ lock(resource: "build-node-image") {
         def archinfo = arches.collectEntries{[it, [:]]}
         def now = java.time.LocalDateTime.now()
         def timestamp = now.format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmm"))
-        def (container_registry_staging_repo, container_registry_repo, prod_tags) = pipeutils.get_ocp_node_registry_repo(pipecfg, params.RELEASE, timestamp)
-        def container_registry_staging_manifest_tag = "${params.RELEASE}"
+        def (container_registry_staging_repo, container_registry_staging_manifest_tag,
+             container_registry_repo, prod_tags) = pipeutils.get_ocp_node_registry_repo(pipecfg, params.RELEASE, timestamp)
         def container_registry_staging_image_tag = "${params.RELEASE}"
         def container_registry_staging_manifest = "${container_registry_staging_repo}:${container_registry_staging_manifest_tag}"
 
@@ -75,6 +75,7 @@ lock(resource: "build-node-image") {
         pipeutils.addOptionalRootCA()
 
         def yumrepos_file
+        def node_image_digest
         stage('Init') {
             shwrap("git clone ${stream_info.yumrepo.url} yumrepos")
             for (repo in stream_info.yumrepo.files) {
@@ -91,8 +92,9 @@ lock(resource: "build-node-image") {
         stage('Build Node Image') {
             withCredentials([file(credentialsId: 'oscontainer-push-registry-secret', variable: 'REGISTRY_AUTH_FILE')]) {
                  def build_from = params.FROM ?: stream_info.from
-                 pipeutils.build_and_push_image(arches: arches,
+                 node_image_digest = pipeutils.build_and_push_image(arches: arches,
                                                 src_commit: commit,
+                                                manifest_digest: true,
                                                 src_url: src_config_url,
                                                 staging_repository: container_registry_staging_repo,
                                                 image_tag_staging: container_registry_staging_image_tag,
@@ -105,7 +107,7 @@ lock(resource: "build-node-image") {
         stage('Build Extensions Image') {
             withCredentials([file(credentialsId: 'oscontainer-push-registry-secret', variable: 'REGISTRY_AUTH_FILE')]) {
                 // Use the node image as from
-                def build_from = container_registry_staging_manifest
+                def build_from = "{container_registry_staging_repo}@{node_image_digest}"
                 pipeutils.build_and_push_image(arches: arches,
                                                src_commit: commit,
                                                src_url: src_config_url,
@@ -147,7 +149,7 @@ lock(resource: "build-node-image") {
             currentBuild.description = "${build_description} ❌"
         }
         message = ":openshift: build-node-image #${env.BUILD_NUMBER} <${env.BUILD_URL}|:jenkins:> <${env.RUN_DISPLAY_URL}|:ocean:> ${build_description}"
-        pipeutils.trySlackSend(message: message)
+     //   pipeutils.trySlackSend(message: message)
     }
 }}} // cosaPod, timeout, and lock finish here
 
