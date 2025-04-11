@@ -867,7 +867,7 @@ def build_remote_image(arches, commit, url, repo, tag, secret=None, from=None,
     return digest_list
 }
 
-def push_manifest(digests, repo, manifest_tag, get_digest) {
+def push_manifest(digests, repo, manifest_tag) {
     def images = ""
     for (digest in digests) {
         images += " --image=docker://${repo}@${digest}"
@@ -877,19 +877,17 @@ def push_manifest(digests, repo, manifest_tag, get_digest) {
     // to push a manifest...)
 
     def digest = ""
-    push_args = ["--write-digest-to-file", "{repo}-manifest-digest"]
+    push_args = ["--write-digest-to-file", "manifest-digest-file"]
     pipeutils.withPodmanRemoteArchBuilder(arch: "s390x") {
         shwrap("""
         cosa push-container-manifest \
             --tag ${manifest_tag} --repo ${repo} ${images} ${push_args.join(' ')}
         """)
-        digest = readFile("${tag}-${arch}")
-        shwrap("""rm -f ${tag}-${arch} """)
+        digest = readFile("manifest-digest-file")
+        //shwrap("""rm -f ${tag}-${arch} """)
 
     }
-    if (exitget_digest) {
-        return digest 
-    }
+    return digest 
 }
 
 def copy_image(src_image, dest_image, authfile = "") {
@@ -926,7 +924,6 @@ def build_and_push_image(params = [:]) {
     // from:                 string  -- Value to replace in the Containerfile
     // image_tag_staging:    string  -- Image tag for the staging repo.
     // manifest_tag_staging: string  -- Manifest tag for the staging repo.
-    // manifest_digest:      boolean -- Return the manifest digest
     // secret:               string  -- File path for the `podman --secret`
     // src_commit:           string  -- Source Git commit.
     // src_url:              string  -- Source Git URL.
@@ -939,7 +936,7 @@ def build_and_push_image(params = [:]) {
     def digests = build_remote_image(params['arches'], params['src_commit'], params['src_url'], params['staging_repository'],
                                      params['image_tag_staging'], secret, from, extra_build_args)
     stage("Push Manifest") {
-        return push_manifest(digests, params['staging_repository'], params['manifest_tag_staging'][0])
+        return push_manifest(digests, params['staging_repository'], params['manifest_tag_staging'])
     }
 }
 
