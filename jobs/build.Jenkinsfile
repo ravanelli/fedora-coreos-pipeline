@@ -569,15 +569,6 @@ lock(resource: "build-${params.STREAM}") {
     }
 
     echo message
-    pipeutils.trySlackSend(message: message)
-    pipeutils.tryWithMessagingCredentials() {
-        shwrap("""
-        /usr/lib/coreos-assembler/fedmsg-broadcast --fedmsg-conf=\${FEDORA_MESSAGING_CONF} \
-            build.state.change --build ${newBuildID} --basearch ${basearch} --stream ${params.STREAM} \
-            --build-dir ${BUILDS_BASE_HTTP_URL}/${params.STREAM}/builds/${newBuildID}/${basearch} \
-            --state FINISHED --result ${currentBuild.result}
-        """)
-    }
 }}}} // finally, cosaPod, timeout, and locks finish here
 
 // This does an early archive of just the OSTree. This has the desired side
