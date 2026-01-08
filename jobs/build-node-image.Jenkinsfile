@@ -117,7 +117,7 @@ lock(resource: "build-node-image") {
 
         def yumrepos_file
         stage('Init') {
-            shwrap("git clone ${stream_info.yumrepo.url} yumrepos")
+            shwrap("git clone ${stream_info.yumrepo.url} -b mr/4.22 yumrepos")
             for (repo in stream_info.yumrepo.files) {
                 shwrap("cat yumrepos/${repo} >> all.repo")
             }
