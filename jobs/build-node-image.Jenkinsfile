@@ -141,7 +141,7 @@ lock(resource: "build-node-image") {
         }
 
         stage('Build Node Image') {
-            withCredentials([file(credentialsId: 'oscontainer-push-registry-secret', variable: 'REGISTRY_AUTH_FILE')]) {
+            withCredentials([file(credentialsId: 'ravanelli-registry-ci', variable: 'REGISTRY_AUTH_FILE')]) {
                  def build_from = params.FROM ?: stream_info.from
                  def extra_build_args = []
                  if (stream_class_label) {
@@ -171,9 +171,8 @@ lock(resource: "build-node-image") {
             }
         }
 
-        if (stream_info.extensions != false) {
             stage('Build Extensions Image') {
-                withCredentials([file(credentialsId: 'oscontainer-push-registry-secret', variable: 'REGISTRY_AUTH_FILE')]) {
+                withCredentials([file(credentialsId: 'ravanelli-registry-ci', variable: 'REGISTRY_AUTH_FILE')]) {
                     // Use the node image as from
                     def build_from = "${registry_staging_repo}@${node_image_manifest_digest}"
                     def label_args = []
@@ -205,10 +204,9 @@ lock(resource: "build-node-image") {
                                                                       "--add-openshift-build-labels"] + label_args)
                 }
             }
-        }
         if (stream_info.run_test != false) {
             stage("Run Tests") {
-                withCredentials([file(credentialsId: 'oscontainer-push-registry-secret', variable: 'REGISTRY_AUTH_FILE')]) {
+                withCredentials([file(credentialsId: 'ravanelli-registry-ci', variable: 'REGISTRY_AUTH_FILE')]) {
                     def openshift_stream = params.RELEASE.split("-")[0]
                     def rhel_stream = "rhel-" + params.RELEASE.split("-")[1]
 
@@ -289,7 +287,7 @@ lock(resource: "build-node-image") {
             }
         }
         stage("Release Manifests") {
-            withCredentials([file(credentialsId: 'oscontainer-push-registry-secret', variable: 'REGISTRY_AUTH_FILE')]) {
+            withCredentials([file(credentialsId: 'ravanelli-registry-ci', variable: 'REGISTRY_AUTH_FILE')]) {
                 // copy the extensions first as the node image existing is a signal
                 // that it's ready for release. So we want all the expected artifacts
                 // to be available when the ART tooling kicks in.
@@ -344,6 +342,5 @@ lock(resource: "build-node-image") {
         }
 
         message = "${message} build-node-image #${env.BUILD_NUMBER} <${env.BUILD_URL}|:jenkins:> <${env.RUN_DISPLAY_URL}|:ocean:> ${build_description}${unique_tag_display} ${pullspec_links}"
-        pipeutils.trySlackSend(message: message)
     }
 }}} // cosaPod, timeout, and lock finish here
