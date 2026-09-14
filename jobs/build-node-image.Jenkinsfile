@@ -32,6 +32,10 @@ properties([
              description: 'Pre-built extensions image pullspec (e.g. quay.io/repo@sha256:def...). Required when NODE_IMAGE is set.',
              defaultValue: '',
              trim: true),
+      string(name: 'PRIORITY',
+             description: 'Lock queue priority see: https://github.com/jenkinsci/lockable-resources-plugin#lock-queue-priority',
+             defaultValue: '0',
+             trim: true),
     ]+ pipeutils.add_hotfix_parameters_if_supported()),
     buildDiscarder(logRotator(
         numToKeepStr: '100',
@@ -63,6 +67,7 @@ def src_config_url = stream_info.source_config.url
 // NPE on .split(). Same defensive pattern as `params.FROM ?:` below.
 def node_image = params.NODE_IMAGE ?: ''
 def extensions_image = params.EXTENSIONS_IMAGE ?: ''
+def queue_priority =  params.PRIORITY.toInteger()
 def skip_build = false
 if (node_image != '' || extensions_image != '') {
     skip_build = true
@@ -107,7 +112,7 @@ def build_args_file = "build-args-${params.RELEASE}.conf"
 // Get the tag that's unique
 def unique_tag = ""
 
-lock(resource: "build-node-image") {
+lock(resource: "build-node-image", priority: queue_priority) {
     // building actually happens on builders so we don't need much resources
     // for the building, but we do run x86_64 kola tests in the COSA pod here
     // so we need resources for that.
